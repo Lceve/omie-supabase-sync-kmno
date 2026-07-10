@@ -1,0 +1,52 @@
+name: Omie Sync RT
+
+on:
+  schedule:
+    # Incremental sync a cada 2 horas
+    - cron: '0 */2 * * *'
+    # Full sync diário às 2h da manhã (horário UTC)
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Determine sync mode
+        id: mode
+        run: |
+          CRON="${{ github.event.schedule }}"
+          if [ "$CRON" = "0 2 * * *" ]; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "full=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run incremental sync
+        if: steps.mode.outputs.full == 'false' && github.event_name == 'schedule'
+        run: node src/sync.js
+        env:
+          OMIE_APP_KEY: ${{ secrets.OMIE_APP_KEY }}
+          OMIE_APP_SECRET: ${{ secrets.OMIE_APP_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: Run full sync
+        if: steps.mode.outputs.full == 'true' || github.event_name == 'workflow_dispatch'
+        run: node src/sync.js --full
+        env:
+          OMIE_APP_KEY: ${{ secrets.OMIE_APP_KEY }}
+          OMIE_APP_SECRET: ${{ secrets.OMIE_APP_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

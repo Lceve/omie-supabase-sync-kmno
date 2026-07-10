@@ -1,0 +1,89 @@
+name: Sync Omie KMNO (completo)
+
+on:
+  schedule:
+    # Incremental a cada 2 horas — mesmo padrao do RT/Blue Line
+    - cron: '0 */2 * * *'
+    # Full sync diario as 2am
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 'Rodar sync completo (--full)?'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Determinar modo (full vs incremental)
+        id: mode
+        run: |
+          # Cron '0 2 * * *' = full sync diario.
+          # Cron '0 */2 * * *' = incremental.
+          # workflow_dispatch usa o input manual.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "full=${{ github.event.inputs.full }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 2 * * *" ]; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "full=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rodar sync (incremental)
+        if: steps.mode.outputs.full == 'false'
+        env:
+          OMIE_APP_KEY: ${{ secrets.OMIE_APP_KEY_KMNO }}
+          OMIE_APP_SECRET: ${{ secrets.OMIE_APP_SECRET_KMNO }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_KMNO }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY_KMNO }}
+        run: npm run sync:once
+
+      - name: Rodar sync (FULL)
+        if: steps.mode.outputs.full == 'true'
+        env:
+          OMIE_APP_KEY: ${{ secrets.OMIE_APP_KEY_KMNO }}
+          OMIE_APP_SECRET: ${{ secrets.OMIE_APP_SECRET_KMNO }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_KMNO }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY_KMNO }}
+        run: npm run sync:full
+
+# ============================================================
+# SETUP NECESSARIO ANTES DE ATIVAR (fazer isso quando puder):
+#
+# 1. Criar/confirmar o repositorio no GitHub (ex: LMC404-lang/omie-supabase-sync-kmno)
+#    e subir o conteudo da pasta local C:\omie-sync\omie-supabase-sync-KMNO,
+#    colocando este arquivo em .github/workflows/sync.yml
+#
+# 2. Settings -> Secrets and variables -> Actions -> New repository secret,
+#    criar estes 4 (com os MESMOS valores que estao no seu .env local):
+#      OMIE_APP_KEY_KMNO
+#      OMIE_APP_SECRET_KMNO
+#      SUPABASE_URL_KMNO       (https://enedbeguahicctwwhpmb.supabase.co)
+#      SUPABASE_SERVICE_KEY_KMNO
+#
+# 3. Testar manualmente primeiro: aba Actions -> "Sync Omie KMNO (completo)"
+#    -> Run workflow -> full = false (roda incremental, mais rapido e seguro
+#    pra testar antes do full).
+#
+# 4. So depois de confirmar que roda ok manualmente, deixar o cron ativo
+#    fazendo o normal (nao precisa fazer nada extra -- o cron do topo do
+#    arquivo ja ativa sozinho assim que o arquivo estiver no repo).
+# ============================================================
