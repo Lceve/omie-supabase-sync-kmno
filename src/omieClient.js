@@ -31,12 +31,18 @@ axiosRetry(http, {
     if (m) return parseInt(m[1], 10) * 1000 + 500;
     return count * 1000;
   },
-  retryCondition: (err) =>
-    axiosRetry.isNetworkOrIdempotentRequestError(err) ||
-    err?.response?.status === 429 ||
-    (err?.response?.status === 500 &&
-      typeof err?.response?.data?.faultstring === 'string' &&
-      err.response.data.faultstring.includes('Consumo redundante')),
+  retryCondition: (err) => {
+    const fs = err?.response?.data?.faultstring;
+    const isKnownTransient500 =
+      err?.response?.status === 500 &&
+      typeof fs === 'string' &&
+      (fs.includes('Consumo redundante') || fs.includes('Broken response'));
+    return (
+      axiosRetry.isNetworkOrIdempotentRequestError(err) ||
+      err?.response?.status === 429 ||
+      isKnownTransient500
+    );
+  },
   onRetry: (count, err) =>
     logger.warn(`Omie retry #${count}`, { error: err.message }),
 });

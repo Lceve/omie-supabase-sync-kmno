@@ -27,7 +27,10 @@ async function getLastSync(entity) {
     .single();
 
   if (error || !data) return null;
-  return new Date(data.finished_at);
+  const MARGEM_SEGURANCA_DIAS = 15; // cobre atraso de lancamento/conciliacao no Omie
+  const dataComMargem = new Date(data.finished_at);
+  dataComMargem.setDate(dataComMargem.getDate() - MARGEM_SEGURANCA_DIAS);
+  return dataComMargem;
 }
 
 module.exports = { writeLog, getLastSync };

@@ -74,6 +74,7 @@ function isBlank(v) {
 }
 
 function getPath(obj, path) {
+
   if (!obj || !path) return null;
   const parts = path.split('.');
   let cur = obj;
@@ -168,9 +169,9 @@ function resolveId(record, idFields, pkType, hashSeed = '') {
     // Used when a single field (e.g. nCodTitulo) is shared by multiple
     // rows (e.g. one per parcela/movimento) and is not unique alone.
     if (Array.isArray(field)) {
-      const parts = field.map((f) => getPath(record, f));
-      if (parts.some((p) => isBlank(p))) continue; // need all parts present
-      return parts.map((p) => String(p)).join('|');
+const parts = field.map((f) => getPath(record, f)).filter((p) => !isBlank(p));
+if (parts.length === 0) continue; // nothing usable at all
+return parts.map((p) => String(p)).join('|');
     }
     const value = getPath(record, field);
     if (!isBlank(value)) {
@@ -305,6 +306,10 @@ function extractChildRecords(parentRecord, parentIdValue, parentPkCol, entry, sy
   }
 }
 
+function countFilledFields(row) {
+  return Object.values(row).filter((v) => v !== null && v !== undefined && v !== '').length;
+}
+
 function makeTransformer(entry) {
   return (records) => {
     const syncedAt = new Date().toISOString();
@@ -321,7 +326,12 @@ function makeTransformer(entry) {
       const key = String(idValue);
       if (seenParents.has(key)) {
         const existingIdx = parent.findIndex((r) => String(r[pkCol]) === key);
-        if (existingIdx >= 0) parent[existingIdx] = row;
+        if (existingIdx >= 0) {
+  const existing = parent[existingIdx];
+  if (countFilledFields(row) >= countFilledFields(existing)) {
+    parent[existingIdx] = row;
+  }
+}
       } else {
         seenParents.add(key);
         parent.push(row);

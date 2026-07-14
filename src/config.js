@@ -6,8 +6,8 @@ module.exports = {
     appSecret: process.env.OMIE_APP_SECRET,
     baseUrl: process.env.OMIE_BASE_URL || 'https://app.omie.com.br/api/v1',
     pageSize: parseInt(process.env.OMIE_PAGE_SIZE) || 50,
-    requestDelayMs: parseInt(process.env.OMIE_REQUEST_DELAY_MS) || 300,
-    maxRetries: parseInt(process.env.OMIE_MAX_RETRIES) || 3,
+    requestDelayMs: parseInt(process.env.OMIE_REQUEST_DELAY_MS) || 600,
+    maxRetries: parseInt(process.env.OMIE_MAX_RETRIES) || 6,
     requestTimeoutMs: parseInt(process.env.OMIE_REQUEST_TIMEOUT_MS) || 60000,
   },
   supabase: {
@@ -29,3 +29,4 @@ module.exports = {
     dir: process.env.LOG_DIR || './logs',
   },
 };
+
