@@ -9,12 +9,17 @@
 // data antiga pra sempre.
 //
 // Este script força um re-fetch de uma janela ROLANTE fixa (default
-// 120 dias / ~4 meses) pra trás, sempre a partir de hoje -- não
+// 90 dias / ~3 meses) pra trás, sempre a partir de hoje -- não
 // depende do último sync bem-sucedido. Upsert é por cod_titulo (PK),
 // então re-processar NÃO duplica -- só corrige a linha existente.
 //
+// LIMITE DO OMIE (descoberto 12/08/2026): a API do ListarMovimentos
+// aceita no máximo 3 meses pra trás e 3 meses pra frente no intervalo
+// dDtPagtoDe/dDtPagtoAte. Por isso o default aqui é 90 dias, não mais
+// -- passar disso arrisca erro/rejeição da API.
+//
 // Uso: node scripts/backfill-rolling.js [dias] [entidade]
-//   dias      default 120
+//   dias      default 90 (não passar de ~90, ver limite acima)
 //   entidade  default financial_movements
 //
 // Pensado pra rodar 1x/dia via cron, separado do sync incremental de
@@ -27,7 +32,7 @@ const { writeLog } = require('../src/syncLog');
 const { pkColumnName } = require('../src/transformers/generic');
 const logger = require('../src/logger');
 
-const DIAS = parseInt(process.argv[2] || '120', 10);
+const DIAS = parseInt(process.argv[2] || '90', 10);
 const ENTIDADE = process.argv[3] || 'financial_movements';
 
 async function main() {
