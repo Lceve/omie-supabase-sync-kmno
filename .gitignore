@@ -1,3 +1,8 @@
 ﻿node_modules/
 .env
 logs/
+.env.txt
+*.env.txt
+*.bak
+*.bak-*
+*.bak_*

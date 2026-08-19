@@ -262,7 +262,12 @@ const TABLES = [
       { name: 'codigo_conta_corrente',      from: 'informacoes_adicionais.codigo_conta_corrente', type: 'bigint' },
       { name: 'codigo_departamento',        from: 'informacoes_adicionais.codigo_departamento' },
       { name: 'codigo_tipo_documento',      from: 'informacoes_adicionais.codigo_tipo_documento' },
-      { name: 'codigo_vendedor',            from: 'informacoes_adicionais.codigo_vendedor',       type: 'bigint' },
+      { name: 'codigo_vendedor',            from: 'informacoes_adicionais.codVend',       type: 'bigint' },
+        { name: 'cancelado', from: 'infoCadastro.cancelado', type: 'boolean' },
+        { name: 'faturado', from: 'infoCadastro.faturado', type: 'boolean' },
+        { name: 'denegado', from: 'infoCadastro.denegado', type: 'boolean' },
+        { name: 'devolvido', from: 'infoCadastro.devolvido', type: 'boolean' },
+        { name: 'autorizado', from: 'infoCadastro.autorizado', type: 'boolean' },
       { name: 'codigo_projeto',             from: 'informacoes_adicionais.codProj',               type: 'bigint' },
       { name: 'consumidor_final',           from: 'informacoes_adicionais.consumidor_final' },
       { name: 'enviar_email',               from: 'informacoes_adicionais.enviar_email',          type: 'boolean' },
@@ -405,7 +410,7 @@ const TABLES = [
       { name: 'data_juros',                 from: 'juros.data_juros',                 type: 'date' },
       { name: 'codigo_categoria',           from: 'codigo_categoria' },
       { name: 'codigo_tipo_documento',      from: 'codigo_tipo_documento' },
-      { name: 'codigo_conta_corrente',      from: 'codigo_conta_corrente',            type: 'bigint' },
+      { name: 'codigo_conta_corrente',      from: 'id_conta_corrente',                type: 'bigint' },
       { name: 'codigo_projeto',             from: 'codigo_projeto',                   type: 'bigint' },
       { name: 'codigo_vendedor',            from: 'codigo_vendedor',                  type: 'bigint' },
       { name: 'codigo_departamento',        from: 'departamentos.cCodDepartamento' },
@@ -465,7 +470,7 @@ const TABLES = [
       { name: 'valor_inss',                 from: 'valor_inss',                       type: 'numeric' },
       { name: 'codigo_categoria',           from: 'codigo_categoria' },
       { name: 'codigo_tipo_documento',      from: 'codigo_tipo_documento' },
-      { name: 'codigo_conta_corrente',      from: 'codigo_conta_corrente',            type: 'bigint' },
+      { name: 'codigo_conta_corrente',      from: 'id_conta_corrente',                type: 'bigint' },
       { name: 'codigo_projeto',             from: 'codigo_projeto',                   type: 'bigint' },
       { name: 'codigo_vendedor',            from: 'codigo_vendedor',                  type: 'bigint' },
       { name: 'codigo_departamento',        from: 'departamentos.cCodDepartamento' },
@@ -483,6 +488,19 @@ const TABLES = [
       { name: 'info_dt_alt',                from: 'info.dAlt',                         type: 'date' },
       { name: 'info_hr_alt',                from: 'info.hAlt' },
       { name: 'info_user_alt',              from: 'info.uAlt' },
+    ],
+    children: [
+      {
+        table: 'omie_accounts_payable_categorias',
+        listFrom: 'categorias',
+        parentRefColumn: 'parent_omie_id',
+        idFields: ['codigo_categoria'],
+        columns: [
+          { name: 'cod_categoria', from: 'codigo_categoria' },
+          { name: 'valor',         from: 'valor',       type: 'numeric' },
+          { name: 'percentual',    from: 'percentual',  type: 'numeric' },
+        ],
+      },
     ],
   },
 
@@ -1091,7 +1109,14 @@ const TABLES = [
     endpoint: 'financas/mf',
     action: 'ListarMovimentos',
     listKey: 'movimentos',
-    idFields: ['detalhes.nCodTitulo'],
+    idFields: [['detalhes.nCodTitulo', 'detalhes.cOrigem', 'detalhes.dDtPagamento', 'resumo.nValPago']],
+    dedupKeyColumns: ['cod_titulo', 'origem', 'dt_pagamento', 'val_pago', 'natureza', 'cod_cc'],
+    // Chave composta (corrigido 20/07/2026): nCodTitulo sozinho e
+    // compartilhado por TODAS as parcelas/baixas de um mesmo titulo, e
+    // nao diferencia registros diferentes -- causou R$15,5mi+ de
+    // duplicidade acumulada em financial_movements (KMNO+RT). A
+    // combinacao titulo+origem+data pagamento+valor pago identifica
+    // cada movimento de forma unica e estavel entre syncs.
     paginationStyle: 'new',
     sinceDateField: 'dDtPagtoDe',
     sinceEndDateField: 'dDtPagtoAte',
@@ -1402,6 +1427,7 @@ const TABLES = [
       { name: 'tipo_nf',         from: 'ide.tpNF' },
       { name: 'tipo_ambiente',   from: 'ide.tpAmb' },
       { name: 'chave_nfe',       from: 'compl.cChaveNFe' },
+      { name: 'codigo_categoria', from: 'compl.cCodCateg' },
       { name: 'natureza_operacao', from: 'nfCabecalho.natOp' },
       { name: 'dt_emissao',      from: 'ide.dEmi',        type: 'date' },
       { name: 'dt_saida',        from: 'ide.dSaiEnt',     type: 'date' },
@@ -1411,7 +1437,7 @@ const TABLES = [
       // nfDestInt
       { name: 'cod_cliente',     from: 'nfDestInt.nCodCli',    type: 'bigint' },
       { name: 'cnpj_cpf',        from: 'nfDestInt.cnpj_cpf' },
-      { name: 'razao_social',    from: 'nfDestInt.xNome' },
+      { name: 'razao_social',    from: 'nfDestInt.cRazao' },
       { name: 'email_dest',      from: 'nfDestInt.email' },
       { name: 'endereco_dest',   from: 'nfDestInt.xLgr' },
       { name: 'numero_dest',     from: 'nfDestInt.nro' },
@@ -1436,7 +1462,7 @@ const TABLES = [
       { name: 'valor_cofins',    from: 'total.ICMSTot.vCOFINS', type: 'numeric' },
       { name: 'valor_nota',      from: 'total.ICMSTot.vNF',     type: 'numeric' },
       // transp
-      { name: 'modalidade_frete', from: 'transp.modFrete' },
+      { name: 'modalidade_frete', from: 'compl.cModFrete' },
       { name: 'cnpj_transportadora', from: 'transp.transporta.CNPJ' },
       { name: 'razao_transportadora', from: 'transp.transporta.xNome' },
       { name: 'ie_transportadora', from: 'transp.transporta.IE' },
@@ -1453,7 +1479,7 @@ const TABLES = [
         parentRefColumn: 'parent_omie_id',
         idFields: ['nItem'],
         columns: [
-          { name: 'n_item',             from: 'nItem',                              type: 'bigint' },
+          { name: 'n_item',             from: 'nfProdInt.nCodItem',                              type: 'bigint' },
           // prod
           { name: 'cprod',              from: 'prod.cProd' },
           { name: 'cean',               from: 'prod.cEAN' },
@@ -1795,3 +1821,5 @@ module.exports = {
   isEnabled,
   getEnabledTiers,
 };
+
+

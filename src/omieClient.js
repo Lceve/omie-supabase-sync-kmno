@@ -161,8 +161,12 @@ async function fetchAll(
   // don't have a since timestamp, materialize one. This avoids 500s on
   // endpoints that REQUIRE a date range (NF-e, financial movements, …).
   let effectiveSince = since;
-  if (!effectiveSince && options.defaultSinceDays) {
-    effectiveSince = new Date(Date.now() - options.defaultSinceDays * 86400000);
+  if (!effectiveSince) {
+    if (options.full && sinceDateField) {
+      effectiveSince = new Date('2015-01-01');
+    } else if (options.defaultSinceDays) {
+      effectiveSince = new Date(Date.now() - options.defaultSinceDays * 86400000);
+    }
   }
 
   const records = [];

@@ -21,7 +21,7 @@ async function syncEntity(entity, full = false) {
   }
 
   try {
-    const raw = await entity.extract(since);
+    const raw = await entity.extract(since, full);
     logger.info(`Extracted ${raw.length} records`, { entity: entity.name });
 
     const { parent, children } = entity.transform(raw);

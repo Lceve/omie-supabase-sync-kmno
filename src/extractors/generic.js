@@ -9,7 +9,7 @@ const { fetchAll } = require('../omieClient');
  * Every entry can be used as-is; no per-table extractor needed.
  */
 function makeExtractor(entry) {
-  return async (since = null) => {
+  return async (since = null, full = false) => {
     // Registry entries opt into incremental sync by declaring a
     // `sinceDateField` (or `defaultSinceDays`).  When neither is set,
     // we never send a date filter — most Omie lookup endpoints
@@ -34,6 +34,7 @@ function makeExtractor(entry) {
         totalPagesField: entry.totalPagesField,
         paginated: entry.paginated,
         defaultSinceDays: entry.defaultSinceDays,
+        full,
       }
     );
   };

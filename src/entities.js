@@ -50,7 +50,7 @@ function entityFromEntry(entry) {
     purpose: entry.purpose,
     legacy: !!entry.legacy,
     entry,
-    extract: (since) => extractor(since),
+    extract: (since, full) => extractor(since, full),
     transform,
   };
 }

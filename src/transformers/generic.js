@@ -169,9 +169,9 @@ function resolveId(record, idFields, pkType, hashSeed = '') {
     // Used when a single field (e.g. nCodTitulo) is shared by multiple
     // rows (e.g. one per parcela/movimento) and is not unique alone.
     if (Array.isArray(field)) {
-const parts = field.map((f) => getPath(record, f)).filter((p) => !isBlank(p));
-if (parts.length === 0) continue; // nothing usable at all
-return parts.map((p) => String(p)).join('|');
+      const parts = field.map((f) => getPath(record, f));
+      if (parts.some((p) => isBlank(p))) continue; // chave composta incompleta (algum campo vazio) -- tenta o proximo candidato em vez de degradar
+      return parts.map((p) => String(p)).join('|');
     }
     const value = getPath(record, field);
     if (!isBlank(value)) {
@@ -292,16 +292,39 @@ function mapChildRecord(record, childDef, parentIdValue, parentPkCol, syncedAt, 
   return row;
 }
 
-function extractChildRecords(parentRecord, parentIdValue, parentPkCol, entry, syncedAt, out) {
+// `seenChildren` is keyed by child table name -> Map(key -> index in out[table]).
+// It persists across the whole records loop (passed in from makeTransformer),
+// so if the SAME parent record shows up twice in `records` (a recurring Omie
+// pagination glitch — see financial_movements dup fix), its child rows don't
+// get pushed twice with an identical computed id. When a duplicate key shows
+// up, we keep whichever occurrence has more filled fields, same policy already
+// used for parent-record dedup above.
+function extractChildRecords(parentRecord, parentIdValue, parentPkCol, entry, syncedAt, out, seenChildren) {
   for (const childDef of entry.children || []) {
     let list = getPath(parentRecord, childDef.listFrom);
     if (!list) continue;
     if (!Array.isArray(list)) list = [list];
     if (!out[childDef.table]) out[childDef.table] = [];
+    if (!seenChildren[childDef.table]) seenChildren[childDef.table] = new Map();
+
+    const pkCol = pkColumnName(childDef);
+    const seenMap = seenChildren[childDef.table];
+
     list.forEach((rec, idx) => {
       if (rec === null || rec === undefined) return;
       const row = mapChildRecord(rec, childDef, parentIdValue, parentPkCol, syncedAt, idx);
-      out[childDef.table].push(row);
+      const key = String(row[pkCol]);
+
+      if (seenMap.has(key)) {
+        const existingIdx = seenMap.get(key);
+        const existing = out[childDef.table][existingIdx];
+        if (countFilledFields(row) >= countFilledFields(existing)) {
+          out[childDef.table][existingIdx] = row;
+        }
+      } else {
+        seenMap.set(key, out[childDef.table].length);
+        out[childDef.table].push(row);
+      }
     });
   }
 }
@@ -310,11 +333,27 @@ function countFilledFields(row) {
   return Object.values(row).filter((v) => v !== null && v !== undefined && v !== '').length;
 }
 
+function dedupByContent(parent, keyColumns) {
+  const groups = new Map();
+  for (const row of parent) {
+    const key = keyColumns.map((c) => String(row[c] != null ? row[c] : '')).join('~~');
+    const existing = groups.get(key);
+    if (!existing) { groups.set(key, row); continue; }
+    const existingComposto = String(existing.omie_id || '').includes('|');
+    const rowComposto = String(row.omie_id || '').includes('|');
+    if (rowComposto && !existingComposto) { groups.set(key, row); continue; }
+    if (rowComposto !== existingComposto) continue;
+    if (countFilledFields(row) > countFilledFields(existing)) groups.set(key, row);
+  }
+  return Array.from(groups.values());
+}
+
 function makeTransformer(entry) {
   return (records) => {
     const syncedAt = new Date().toISOString();
     const parent = [];
     const seenParents = new Set();
+    const seenChildren = {};
     const children = {};
 
     for (const record of records || []) {
@@ -337,10 +376,11 @@ function makeTransformer(entry) {
         parent.push(row);
       }
 
-      extractChildRecords(record, idValue, pkCol, entry, syncedAt, children);
+      extractChildRecords(record, idValue, pkCol, entry, syncedAt, children, seenChildren);
     }
 
-    return { parent, children };
+    const finalParent = entry.dedupKeyColumns ? dedupByContent(parent, entry.dedupKeyColumns) : parent;
+    return { parent: finalParent, children };
   };
 }
 
