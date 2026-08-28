@@ -138,6 +138,7 @@ const TABLES = [
       { name: 'bloqueado',                  from: 'bloqueado',                type: 'boolean' },
       { name: 'bloquear_faturamento',       from: 'bloquear_faturamento',     type: 'boolean' },
       { name: 'inativo',                    from: 'inativo',                  type: 'boolean' },
+
       { name: 'observacao',                 from: 'observacao' },
       { name: 'pais',                       from: 'pais' },
       { name: 'estado',                     from: 'estado' },
@@ -385,6 +386,7 @@ const TABLES = [
     phase: 0,
     legacy: true,
     purpose: 'Accounts receivable',
+    preserveFilledFields: true,
     columns: [
       { name: 'codigo_lancamento_omie',     from: 'codigo_lancamento_omie',           type: 'bigint' },
       { name: 'codigo_lancamento_integ',    from: 'codigo_lancamento_integracao' },
@@ -447,6 +449,7 @@ const TABLES = [
     phase: 0,
     legacy: true,
     purpose: 'Accounts payable',
+    preserveFilledFields: true,
     columns: [
       { name: 'codigo_lancamento_omie',     from: 'codigo_lancamento_omie',           type: 'bigint' },
       { name: 'codigo_lancamento_integ',    from: 'codigo_lancamento_integracao' },
@@ -636,6 +639,7 @@ const TABLES = [
       { name: 'bloqueado',                  from: 'bloqueado',                        type: 'boolean' },
       { name: 'bloquear_exclusao',          from: 'bloquear_exclusao',                type: 'boolean' },
       { name: 'inativo',                    from: 'inativo',                          type: 'boolean' },
+
       { name: 'ativo',                      from: 'inativo',                          type: 'boolean_inverted' },
       { name: 'imagem_principal',           from: 'imagens.imagem_principal' },
       { name: 'info_dt_inc',                from: 'info.dInc',                         type: 'date' },
@@ -803,6 +807,7 @@ const TABLES = [
       { name: 'descricao',        from: 'descricao' },
       { name: 'estrutura',        from: 'estrutura' },
       { name: 'inativo',          from: 'inativo', type: 'boolean' },
+
     ],
   },
   {
@@ -820,6 +825,7 @@ const TABLES = [
       { name: 'codint',           from: 'codint' },
       { name: 'nome',             from: 'nome' },
       { name: 'inativo',          from: 'inativo', type: 'boolean' },
+
     ],
   },
   {
@@ -889,6 +895,7 @@ const TABLES = [
       { name: 'descricao',        from: 'descricao' },
       { name: 'descricao_padrao', from: 'descricaoPadrao' },
       { name: 'inativo',          from: 'inativo', type: 'boolean' },
+
     ],
   },
   {
@@ -922,6 +929,7 @@ const TABLES = [
       { name: 'fone',                from: 'fone' },
       { name: 'cpf',                 from: 'cpf' },
       { name: 'inativo',             from: 'inativo',                           type: 'boolean' },
+
     ],
   },
   {
@@ -955,6 +963,7 @@ const TABLES = [
       { name: 'tipo',                 from: 'tipo' },
       { name: 'padrao',               from: 'padrao',                            type: 'boolean' },
       { name: 'inativo',              from: 'inativo',                           type: 'boolean' },
+
       { name: 'codigo_cliente',       from: 'codigo_cliente',                    type: 'bigint' },
       { name: 'disp_venda',           from: 'dispVenda',                         type: 'boolean' },
     ],
@@ -1101,6 +1110,8 @@ const TABLES = [
       { name: 'codigo_categoria', from: 'codigo_categoria' },
       { name: 'tipo_titular',     from: 'tipo_titular' },
       { name: 'inativo',          from: 'inativo',          type: 'boolean' },
+      { name: 'fluxo_caixa', from: 'nao_fluxo', type: 'boolean_inverted' },
+
     ],
   },
   {
@@ -1432,6 +1443,9 @@ const TABLES = [
       { name: 'dt_emissao',      from: 'ide.dEmi',        type: 'date' },
       { name: 'dt_saida',        from: 'ide.dSaiEnt',     type: 'date' },
       { name: 'finalidade',      from: 'ide.finNFe' },
+      { name: 'dt_cancelamento', from: 'ide.dCan',        type: 'date' },
+      { name: 'denegada',        from: 'ide.cDeneg' },
+      { name: 'dt_inutilizacao', from: 'ide.dInut',       type: 'date' },
       { name: 'consumidor_final', from: 'nfCabecalho.indFinal' },
       { name: 'indicador_presenca', from: 'nfCabecalho.indPres' },
       // nfDestInt
@@ -1581,6 +1595,7 @@ const TABLES = [
       { name: 'cod_conta',    from: 'nCodConta',     type: 'bigint' },
       { name: 'cpf',          from: 'cCPF' },
       { name: 'inativo',      from: 'cInativo',      type: 'boolean' },
+
     ],
   },
 
